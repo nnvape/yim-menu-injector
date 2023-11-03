@@ -19,11 +19,7 @@ if (!Directory.Exists(dir))
 WebClient webClient = new WebClient();
 webClient.DownloadFile("https://github.com/YimMenu/YimMenu/releases/download/nightly/YimMenu.dll", @"c:/yimmenuinjector/yimmenu.dll");
 webClient.DownloadFile("https://hyperion.cat/gtainjector.exe", @"c:/yimmenuinjector/gtainjector.exe");
-Console.WriteLine("extracting...");
 Thread.Sleep(2000);
-String ZipPath = @"c:/yimmenuinjector/injector.zip";
-String extractPath = @"c:/yimmenuinjector";
-File.Delete("c:/yimmenuinjector/injector.zip");
 Console.WriteLine("injecting...");
 Thread.Sleep(2000);
 Process.Start("c:/yimmenuinjector/gtainjector.exe");
