@@ -1,10 +1,20 @@
-﻿using System.Diagnostics;
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-public class injector
+class ManualMapInjector
 {
     [DllImport("kernel32.dll")]
     public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out int lpNumberOfBytesWritten);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, out uint lpThreadId);
 
     [DllImport("kernel32.dll")]
     public static extern IntPtr GetModuleHandle(string lpModuleName);
@@ -12,77 +22,63 @@ public class injector
     [DllImport("kernel32.dll")]
     public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, int flAllocationType, int flProtect);
-
-    [DllImport("kernel32.dll")]
-    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, string lpBuffer, int nSize, out int lpNumberOfBytesWritten);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttribute, int dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, int dwCreationFlags, IntPtr lpThreadId);
-
-    public static void InjectDll()
+    public static void Inject(string targetProcessName, string dllPath)
     {
-        string processName = "GTA5";
-        string dllPath = "C:\\yimmenuinjector\\yimmenu.dll";
+        Process targetProcess = null;
+        Process[] processes = Process.GetProcessesByName(targetProcessName);
 
-        Process[] processes = Process.GetProcessesByName(processName);
-
-        if (processes.Length == 0)
+        if (processes.Length > 0)
         {
-            Console.WriteLine($"No process named {processName} found.");
+            targetProcess = processes[0];
+        }
+        else
+        {
+            Console.WriteLine("Target process not found.");
             return;
         }
 
-        int processId = processes[0].Id;
-
-        IntPtr hProcess = OpenProcess(0x1F0FFF, false, processId);
+        IntPtr hProcess = OpenProcess(0x1F0FFF, false, targetProcess.Id);
         if (hProcess == IntPtr.Zero)
         {
-            Console.WriteLine("Failed to open process.");
+            Console.WriteLine("Failed to open target process.");
             return;
         }
 
-        IntPtr dllPathAddr = VirtualAllocEx(hProcess, IntPtr.Zero, dllPath.Length, 0x1000, 0x40);
-        if (dllPathAddr == IntPtr.Zero)
-        {
-            Console.WriteLine("Failed to allocate memory in the remote process.");
-            return;
-        }
+        byte[] dllBytes = System.IO.File.ReadAllBytes(dllPath);
+        IntPtr allocAddress = VirtualAllocEx(hProcess, IntPtr.Zero, (uint)dllBytes.Length, 0x1000, 0x40);
 
         int bytesWritten;
-        if (!WriteProcessMemory(hProcess, dllPathAddr, dllPath, dllPath.Length, out bytesWritten))
+        if (!WriteProcessMemory(hProcess, allocAddress, dllBytes, (uint)dllBytes.Length, out bytesWritten))
         {
-            Console.WriteLine("Failed to write the DLL path to the remote process.");
+            Console.WriteLine("Failed to write DLL into the target process.");
             return;
         }
 
-        IntPtr loadLibraryAddr = GetLoadLibraryAddress();
-        IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, loadLibraryAddr, dllPathAddr, 0, IntPtr.Zero);
+        IntPtr loadLibraryAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA");
+
+        if (loadLibraryAddr == IntPtr.Zero)
+        {
+            Console.WriteLine("Failed to find the address of LoadLibraryA.");
+            return;
+        }
+
+        uint threadId;
+        IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, loadLibraryAddr, allocAddress, 0, out threadId);
+
         if (hThread == IntPtr.Zero)
         {
             Console.WriteLine("Failed to create a remote thread.");
             return;
         }
 
-        Console.WriteLine("DLL injection successful!");
+        Console.WriteLine("DLL injected successfully.");
     }
 
-    private static IntPtr GetLoadLibraryAddress()
+    public static void Main(string[] args)
     {
-        IntPtr kernel32 = GetModuleHandle("kernel32.dll");
-        if (kernel32 == IntPtr.Zero)
-        {
-            return IntPtr.Zero;
-        }
+        string targetProcessName = "GTA5";
+        string dllPath = "c:/yimmenuinjector/yimmenu.dll";
 
-        return GetProcAddress(kernel32, "LoadLibraryA");
-    }
-
-    public static void Main()
-    {
-        InjectDll();
+        Inject(targetProcessName, dllPath);
     }
 }
-
-
