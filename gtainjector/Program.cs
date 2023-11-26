@@ -1,84 +1,95 @@
-using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+#include <iostream>
+#include <windows.h>
+#include <tlhelp32.h>
+#include <string>
 
-class ManualMapInjector
+using namespace std;
+
+int Inject(DWORD pid, const wchar_t* name);
+
+int main()
 {
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+    const wchar_t dll[] = L"c:/yimmenuinjector/yimmenu.dll";
+    DWORD pid = 0;
 
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
-
-    [DllImport("kernel32.dll")]
-    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out int lpNumberOfBytesWritten);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, out uint lpThreadId);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetModuleHandle(string lpModuleName);
-
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
-
-    public static void Inject(string targetProcessName, string dllPath)
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot != INVALID_HANDLE_VALUE)
     {
-        Process targetProcess = null;
-        Process[] processes = Process.GetProcessesByName(targetProcessName);
+        PROCESSENTRY32 entry;
+        entry.dwSize = sizeof(entry);
 
-        if (processes.Length > 0)
+        if (Process32First(hSnapshot, &entry))
         {
-            targetProcess = processes[0];
-        }
-        else
-        {
-            Console.WriteLine("Target process not found.");
-            return;
-        }
-
-        IntPtr hProcess = OpenProcess(0x1F0FFF, false, targetProcess.Id);
-        if (hProcess == IntPtr.Zero)
-        {
-            Console.WriteLine("Failed to open target process.");
-            return;
+            do
+            {
+                if (wstring(entry.szExeFile) == L"GTA5.exe")
+                {
+                    pid = entry.th32ProcessID;
+                    break;
+                }
+            } while (Process32Next(hSnapshot, &entry));
         }
 
-        byte[] dllBytes = System.IO.File.ReadAllBytes(dllPath);
-        IntPtr allocAddress = VirtualAllocEx(hProcess, IntPtr.Zero, (uint)dllBytes.Length, 0x1000, 0x40);
-
-        int bytesWritten;
-        if (!WriteProcessMemory(hProcess, allocAddress, dllBytes, (uint)dllBytes.Length, out bytesWritten))
-        {
-            Console.WriteLine("Failed to write DLL into the target process.");
-            return;
-        }
-
-        IntPtr loadLibraryAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA");
-
-        if (loadLibraryAddr == IntPtr.Zero)
-        {
-            Console.WriteLine("Failed to find the address of LoadLibraryA.");
-            return;
-        }
-
-        uint threadId;
-        IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, loadLibraryAddr, allocAddress, 0, out threadId);
-
-        if (hThread == IntPtr.Zero)
-        {
-            Console.WriteLine("Failed to create a remote thread.");
-            return;
-        }
-
-        Console.WriteLine("DLL injected successfully.");
+        CloseHandle(hSnapshot);
     }
 
-    public static void Main(string[] args)
+    if (pid == 0)
     {
-        string targetProcessName = "GTA5";
-        string dllPath = "c:/yimmenuinjector/yimmenu.dll";
-
-        Inject(targetProcessName, dllPath);
+        wcout << L"Unable to find the target process" << endl;
+        return 0;
     }
+
+    if (Inject(pid, dll))
+    {
+        wcout << L"DLL has been injected into the process successfully" << endl;
+    }
+    else
+    {
+        wcout << L"Couldn't inject DLL into the process" << endl;
+    }
+
+    return 0;
+}
+
+int Inject(DWORD pid, const wchar_t* name)
+{
+    HANDLE hProcess, hThread;
+    SIZE_T BytesWritten;
+    LPVOID mem;
+
+    hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+    if (!hProcess)
+        return 0;
+
+    mem = VirtualAllocEx(hProcess, NULL, wcslen(name) * sizeof(wchar_t), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+    if (mem == NULL)
+    {
+        CloseHandle(hProcess);
+        return 0;
+    }
+
+    if (WriteProcessMemory(hProcess, mem, (LPVOID)name, wcslen(name) * sizeof(wchar_t), &BytesWritten))
+    {
+        hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "LoadLibraryW"), mem, 0, NULL);
+
+        if (!hThread)
+        {
+            VirtualFreeEx(hProcess, NULL, wcslen(name) * sizeof(wchar_t), MEM_RESERVE | MEM_COMMIT);
+            CloseHandle(hProcess);
+            return 0;
+        }
+
+        VirtualFreeEx(hProcess, NULL, wcslen(name) * sizeof(wchar_t), MEM_RESERVE | MEM_COMMIT);
+        CloseHandle(hThread);
+        CloseHandle(hProcess);
+
+        return 1;
+    }
+
+    VirtualFreeEx(hProcess, NULL, wcslen(name) * sizeof(wchar_t), MEM_RESERVE | MEM_COMMIT);
+    CloseHandle(hProcess);
+
+    return 0;
 }
