@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtainjector-cpp", "gtainjector-cpp\gtainjector-cpp.vcxproj", "{1CEA7ECA-5BC6-4B87-BF2A-4BAD20A06BDC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtainjector-cpp", "gtainjector\gtainjector-cpp.vcxproj", "{1CEA7ECA-5BC6-4B87-BF2A-4BAD20A06BDC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
