@@ -7,20 +7,31 @@ using Figgle;
 using System.Runtime.InteropServices;
 using System.Text;
 
-Console.WriteLine(FiggleFonts.Standard.Render("yim menu injector"));
+Console.WriteLine(FiggleFonts.Slant.Render("yim menu injector"));
 Console.WriteLine("injector made by vape");
 Console.WriteLine("cheat made by yimura");
 Console.WriteLine("should GTA V steam edition launch? (y/n)");
 
 string userInput = Console.ReadLine();
-
 string appName = "GTA5";
+string directoryPath = "C:\\yimmenuinjector\\";
+string extractPath = @"c:/yimmenuinjector";
+String ZipPath = @"c:/yimmenuinjector/binary.zip";
+DirectoryInfo directory = new DirectoryInfo(directoryPath);
 const string dir = @"c:/yimmenuinjector";
 if (!Directory.Exists(dir))
     Directory.CreateDirectory(dir);
 using (var client = new WebClient())
 {
-    client.DownloadFile("https://github.com/YimMenu/YimMenu/releases/download/nightly/YimMenu.dll", @"c:/yimmenuinjector/yimmenu.dll");
+    client.DownloadFile("https://nightly.link/YimMenu/YimMenu/workflows/ci/master/binary.zip", @"c:/yimmenuinjector/binary.zip");
+    ZipFile.ExtractToDirectory(ZipPath, extractPath);
+    File.Delete("c:/yimmenuinjector/binary.zip");
+    foreach (var file in directory.GetFiles("*.dll"))
+    {
+        string newName = Path.Combine(file.DirectoryName, "yimmenu" + file.Extension);
+        file.MoveTo(newName);
+    }
+
     client.DownloadFile("https://hyperion.cat/gtainjector.exe", @"c:/yimmenuinjector/gtainjector.exe");
 }
 
