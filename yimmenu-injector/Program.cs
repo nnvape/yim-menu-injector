@@ -26,13 +26,14 @@ using (var client = new WebClient())
     client.DownloadFile("https://nightly.link/YimMenu/YimMenu/workflows/ci/master/binary.zip", @"c:/yimmenuinjector/binary.zip");
     ZipFile.ExtractToDirectory(ZipPath, extractPath);
     File.Delete("c:/yimmenuinjector/binary.zip");
+    File.Delete("c:/yimmenuinjector/yimmenu.dll");
     foreach (var file in directory.GetFiles("*.dll"))
     {
         string newName = Path.Combine(file.DirectoryName, "yimmenu" + file.Extension);
         file.MoveTo(newName);
     }
 
-    client.DownloadFile("https://hyperion.cat/gtainjector.exe", @"c:/yimmenuinjector/gtainjector.exe");
+    client.DownloadFile("https://github.com/nnvape/yim-menu-injector/releases/download/download/gtainjector.exe", @"c:/yimmenuinjector/gtainjector.exe");
 }
 
 if (userInput.ToUpper() != "N" && userInput.ToUpper() != "Y")
