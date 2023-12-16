@@ -46,7 +46,7 @@ if (userInput.ToUpper() == "Y")
 {
     Process p = new Process();
     p.StartInfo.FileName = "C:\\Program Files (x86)\\Steam\\steam.exe";
-    p.StartInfo.Arguments = "steam://rungameid/271590";
+    p.StartInfo.Arguments = "steam://rungameid/271590 -silent -minimized";
     p.Start();
 
     Process[] processes;
