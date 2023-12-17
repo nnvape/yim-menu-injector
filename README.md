@@ -9,5 +9,5 @@ An application that simplifies injecting yim menu into gta 5
 
 # Credits
 
-[Yimura/Yim Menu](https://github.com/YimMenu)
-
+[Yimura](https://github.com/Yimura)
+[YimMenu](https://github.com/YimMenu)
