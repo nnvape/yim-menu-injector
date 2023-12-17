@@ -1,3 +1,13 @@
-# yim-menu-injector ------- requires .net 6.0
 
-injects yim menu dll automatically into GTA V
+# Yim Menu Injector
+
+An application that simplifies injecting yim menu into gta 5
+
+# Requirements
+
+.NET 6.0
+
+# Credits
+
+[Yimura/Yim Menu](https://github.com/YimMenu)
+
