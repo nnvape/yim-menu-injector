@@ -4,22 +4,10 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
-#include <conio.h>
 #include <windows.h>
-#include <map>
 #include <tlhelp32.h>
-#include <Shlobj.h>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include <stdexcept>
 #include <fstream>
 #include <Urlmon.h>
-#include <string>
-#include <windows.h>
-#include <tlhelp32.h>
-#include <thread>
 #pragma comment(lib, "Urlmon.lib")
 
 using namespace std;
