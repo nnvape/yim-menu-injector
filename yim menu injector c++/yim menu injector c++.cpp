@@ -38,6 +38,7 @@ DWORD ChangeName(LPVOID in)
 
     while (true)
     {
+        Sleep(1);
         NameChanger();
     }
 }
